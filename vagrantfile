@@ -1,0 +1,37 @@
+NUM_NODES=2
+NET_IP="10.0.0."
+INIT_IP=10
+
+Vagrant.configure(2) do |config|
+    config.vm.provision "shell", env:{"NET_IP" => NET_IP, "INIT_IP" => INIT_IP}, inline: <<-SCRIPT
+    apt-get update -y && apt install -y vim net-tools telnet git python-pip
+    echo "$NET_IP$((INIT_IP)) master-node" >> /etc/hosts
+    echo "$NET_IP$((INIT_IP+1)) worker-node01" >> /etc/hosts
+    echo "$NET_IP$((INIT_IP+2)) worker-node02" >> /etc/hosts
+SCRIPT
+
+config.vm.box = "bento/ubuntu-22.04"
+config.vm.box_check_update = true
+
+config.vm.define "master" do |master|
+    master.vm.hostname = "master-node"
+    master.vm.network "private_network", ip: NET_IP + "#{INIT_IP}"
+    master.vm.provider "virtualbox" do |vb|
+        vb.memory = 2048
+        vb.cpus = 2
+    end
+  end
+
+  (1..NUM_NODES).each do |i|
+
+    config.vm.define "node0#{i}" do |node|
+      node.vm.hostname = "worker-node0#{i}"
+      node.vm.network "private_network", ip: NET_IP + "#{INIT_IP + i}"
+      node.vm.provider "virtualbox" do |vb|
+          vb.memory = 2048
+          vb.cpus = 1
+      end
+    end
+  
+    end
+  end 
